@@ -1,5 +1,5 @@
 # petrinet_app.py
-from PySide6.QtWidgets import QGraphicsView, QMainWindow, QToolBar, QSplitter, QTextEdit, QWidget, QVBoxLayout, QPushButton
+from PySide6.QtWidgets import QGraphicsView, QMainWindow, QToolBar, QSplitter, QTextEdit, QWidget, QApplication, QDialog, QVBoxLayout, QLabel, QPushButton
 from PySide6.QtGui import QPainter, QAction, QFontDatabase
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QStatusBar
@@ -20,12 +20,17 @@ class View(QMainWindow):
         super().__init__()
         self.controller = controller
 
-        file_menu = self.menuBar().addMenu("Datei")
-        open_action = QAction("Dateiauswahl", self)
+        QApplication.setAttribute(Qt.AA_DontUseNativeMenuBar)
+        file_menu = self.menuBar().addMenu("File")
+        help_menu = self.menuBar().addMenu("Help")
+        about_action = QAction("About", self)
+        about_action.triggered.connect(self.show_about_dialog)
+        help_menu.addAction(about_action)
+        open_action = QAction("Open File", self)
         open_action.triggered.connect(self.controller.open_file_dialog)
         file_menu.addAction(open_action)
 
-        toolbar = QToolBar("Werkzeuge")
+        toolbar = QToolBar("Tools")
         self.addToolBar(toolbar)
 
         increase_mark = QAction("+1", self)
@@ -79,7 +84,7 @@ class View(QMainWindow):
         self.setStatusBar(self.status)
         self.status.showMessage(f"Aktuelle Datei: Keine Datei geladen")
 
-        self.setWindowTitle("Petrinetz Demo")
+        self.setWindowTitle("Petrinet Application - Mischa Kurth")
         self.resize(800, 600)
         self.show()
 
@@ -93,3 +98,18 @@ class View(QMainWindow):
             bounding_rect.width() + 2 * padding,
             bounding_rect.height() + 2 * padding
         )
+
+    def show_about_dialog(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle("About")
+
+        layout = QVBoxLayout(dialog)
+        label = QLabel("petrinet application by Mischa Kurth\n\nversion 1.0\n\n11/2025")
+        label.setWordWrap(True)
+        layout.addWidget(label)
+
+        close_btn = QPushButton("Schließen")
+        close_btn.clicked.connect(dialog.close)
+        layout.addWidget(close_btn)
+
+        dialog.exec()
