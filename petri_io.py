@@ -1,16 +1,32 @@
 from pathlib import Path
 import xml.etree.ElementTree as ET
+from typing import Any
 
 class Parser:
+    """
+    A class for parsing PNML (Petri Net Markup Language) files.
+    """
 
-    def __init__(self):
-        self.places = []
-        self.trans = []
-        self.edges = []
-        self.mark = {}
-        self.root = None
+    def __init__(self) -> None:
+        """
+        Initialize the Parser.
+        """
+        self.places: list[dict[str, Any]] = []
+        self.trans: list[dict[str, Any]] = []
+        self.edges: list[dict[str, Any]] = []
+        self.mark: dict[str, int] = {}
+        self.root: ET.Element | None = None
 
-    def validate(self):
+    def validate(self) -> bool:
+        """
+        Validate the parsed Petri net data.
+
+        Returns:
+            True if the data is valid.
+
+        Raises:
+            ValueError: If duplicates, invalid arcs, or invalid markings are found.
+        """
         # 1. Duplikate prüfen
         place_ids = [p['id'] for p in self.places]
         trans_ids = [t['id'] for t in self.trans]
@@ -45,7 +61,21 @@ class Parser:
         print("Parser-Validierung erfolgreich.")
         return True
 
-    def parse(self, file):
+    def parse(self, file: str) -> tuple[list[tuple[str, str, float, float, int]], list[tuple[str, str, float, float, tuple[int, ...], tuple[int, ...]]]]:
+        """
+        Parse a PNML file.
+
+        Args:
+            file: The path to the PNML file.
+
+        Returns:
+            A tuple containing the places and transitions data for the controller.
+
+        Raises:
+            FileNotFoundError: If the file does not exist.
+            ValueError: If the file path is invalid or the XML is invalid.
+            IOError: If the file cannot be read.
+        """
         path = Path(file)
         if not path.exists():
             raise FileNotFoundError(f"Datei existiert nicht: {file}")
@@ -70,7 +100,13 @@ class Parser:
         return self.get_controller_data()
 
 
-    def get_controller_data(self):
+    def get_controller_data(self) -> tuple[list[tuple[str, str, float, float, int]], list[tuple[str, str, float, float, tuple[int, ...], tuple[int, ...]]]]:
+        """
+        Format the parsed data for the controller.
+
+        Returns:
+            A tuple containing lists of places and transitions.
+        """
         place_ids = [p["id"] for p in self.places]
         place_index = {pid: i for i, pid in enumerate(place_ids)}
 
@@ -101,48 +137,69 @@ class Parser:
         return places_tup, transitions_tup
 
 
-    def parse_places(self):
+    def parse_places(self) -> None:
+        """
+        Parse places from the XML root.
+        """
+        if self.root is None:
+            return
         for p in self.root.findall(".//place"):
             pid = p.get("id")
             name_elem = p.find(".//name//text")
-            name = name_elem.text.strip() if name_elem is not None else pid
+            name = name_elem.text.strip() if name_elem is not None and name_elem.text else pid
 
             pos_elem = p.find(".//graphics//position")
-            x = float(pos_elem.get("x", 0)) if pos_elem is not None else 0
-            y = float(pos_elem.get("y", 0)) if pos_elem is not None else 0
+            x = float(pos_elem.get("x", 0)) if pos_elem is not None else 0.0
+            y = float(pos_elem.get("y", 0)) if pos_elem is not None else 0.0
 
             self.places.append({"id": pid, "name": name, "x": x, "y": y})
 
-    def parse_trans(self):
+    def parse_trans(self) -> None:
+        """
+        Parse transitions from the XML root.
+        """
+        if self.root is None:
+            return
         for t in self.root.findall(".//transition"):
             tid = t.get("id")
             name_elem = t.find(".//name//text")
-            name = name_elem.text.strip() if name_elem is not None else tid
+            name = name_elem.text.strip() if name_elem is not None and name_elem.text else tid
 
             pos_elem = t.find(".//graphics//position")
-            x = float(pos_elem.get("x", 0)) if pos_elem is not None else 0
-            y = float(pos_elem.get("y", 0)) if pos_elem is not None else 0
+            x = float(pos_elem.get("x", 0)) if pos_elem is not None else 0.0
+            y = float(pos_elem.get("y", 0)) if pos_elem is not None else 0.0
 
             self.trans.append({"id": tid, "name": name, "x": x, "y": y})
 
-    def parse_edges(self):
+    def parse_edges(self) -> None:
+        """
+        Parse arcs (edges) from the XML root.
+        """
+        if self.root is None:
+            return
         for a in self.root.findall(".//arc"):
             src = a.get("source")
             dst = a.get("target")
             inscription_elem = a.find(".//inscription//text")
             try:
-                weight = int(inscription_elem.text.strip())
+                weight = int(inscription_elem.text.strip()) if inscription_elem is not None and inscription_elem.text else 1
             except:
                 weight = 1
             self.edges.append({"src": src, "dst": dst, "weight": weight})
 
-    def parse_initial_marking(self):
+    def parse_initial_marking(self) -> None:
+        """
+        Parse initial markings from the XML root.
+        """
+        if self.root is None:
+            return
         for p in self.root.findall(".//place"):
             pid = p.get("id")
             im = p.find(".//initialMarking//text")
-            if im is not None:
+            if im is not None and im.text:
                 try:
                     m = int(im.text.strip())
                 except:
                     m = 0
-                self.mark[pid] = m
+                if pid:
+                    self.mark[pid] = m

@@ -3,19 +3,30 @@ from view import View
 from petrinet import Petrinet
 from petri_io import Parser
 from PySide6.QtWidgets import QFileDialog
+from graphic_items import PlaceNode, TransitionNode
 import os
 
 
 class PetriNetController:
-    def __init__(self):
+    """
+    The controller class for the Petri net application, managing the interaction between the model (Petrinet) and the view (View).
+    """
+
+    def __init__(self) -> None:
+        """
+        Initialize the PetriNetController.
+        """
         self.net = Petrinet()
         self.view = View(self)
-        self.last_selected_place = None
-        self.file_name = None
+        self.last_selected_place: int | None = None
+        self.file_name: str | None = None
         self.open_file_dialog()
 
 
-    def open_file_dialog(self):
+    def open_file_dialog(self) -> None:
+        """
+        Open a file dialog to load a PNML file.
+        """
         path, _ = QFileDialog.getOpenFileName(
             None,
             "Netz laden",
@@ -27,7 +38,13 @@ class PetriNetController:
             self.new_net(path)
             self.view.status.showMessage(f"Aktuelle Datei: {self.file_name}")
 
-    def new_net(self, file_path):
+    def new_net(self, file_path: str) -> None:
+        """
+        Load a new Petri net from a file.
+
+        Args:
+            file_path: The path to the PNML file.
+        """
         self.last_selected_place = None
 
         self.view.petri_canvas.reset_petrinet_graph()
@@ -64,7 +81,13 @@ class PetriNetController:
         self.view.fit_all()
 
 
-    def fire_trans(self, t_id):
+    def fire_trans(self, t_id: int) -> None:
+        """
+        Fire a transition in the Petri net.
+
+        Args:
+            t_id: The ID of the transition to fire.
+        """
         prev_mark = '(' + str(self.net.mark)[1:-1] + ')'
         if self.net.fire_trans(t_id):
             new_mark = '(' + str(self.net.mark)[1:-1] + ')'
@@ -72,7 +95,10 @@ class PetriNetController:
             self.view.petri_canvas.update_labels(self.net.mark)
             self.place_clicked(None, None)
 
-    def add_token(self):
+    def add_token(self) -> None:
+        """
+        Add a token to the currently selected place.
+        """
         if self.last_selected_place is not None:
             if self.net.change_mark(1, self.last_selected_place):
                 self.view.petri_canvas.update_labels(self.net.mark)
@@ -80,14 +106,24 @@ class PetriNetController:
                 self.view.reach_canvas.initialize_graph('(' + reach_canvas_label[1:-1] + ')')
 
 
-    def subtract_token(self):
+    def subtract_token(self) -> None:
+        """
+        Subtract a token from the currently selected place.
+        """
         if self.last_selected_place is not None:
             if self.net.change_mark(-1, self.last_selected_place):
                 self.view.petri_canvas.update_labels(self.net.mark)
                 reach_canvas_label = str(self.net.mark)
                 self.view.reach_canvas.initialize_graph('(' + reach_canvas_label[1:-1] + ')')
 
-    def place_clicked(self, model_id, node=None):
+    def place_clicked(self, model_id: int | None, node: PlaceNode | None) -> None:
+        """
+        Handle a click event on a place node.
+
+        Args:
+            model_id: The ID of the clicked place.
+            node: The PlaceNode object that was clicked.
+        """
         # If the clicked node is already selected, deselect it
         if self.last_selected_place == model_id:
             if node is not None:
@@ -98,7 +134,7 @@ class PetriNetController:
         # Deselect previous node if it exists
         if self.last_selected_place is not None:
             prev_node = self.view.petri_canvas.nodes.get(self.last_selected_place, None)
-            if prev_node is not None:
+            if prev_node is not None and isinstance(prev_node, PlaceNode):
                 prev_node.set_selected(False)
 
         # Select the new node
@@ -108,20 +144,29 @@ class PetriNetController:
         # Update last selected
         self.last_selected_place = model_id
 
-    def load_marking_from_reach_graph(self, marking_str: str):
+    def load_marking_from_reach_graph(self, marking_str: str) -> None:
+        """
+        Load a marking from the reachability graph into the Petri net.
+
+        Args:
+            marking_str: The string representation of the marking to load.
+        """
         new_mark = tuple(int(x) for x in marking_str[1:-1].split(','))
-        self.net.set_mark(new_mark)
-        self.view.petri_canvas.update_labels(new_mark)
+        self.net.set_mark(list(new_mark))
+        self.view.petri_canvas.update_labels(list(new_mark))
         self.view.reach_canvas.highlight_marking(marking_str)
 
-    def analyse(self):
+    def analyse(self) -> None:
+        """
+        Analyze the current Petri net and display the results.
+        """
         if self.net.mark is None:
             return
 
         self.net.analysis()
 
         # Determine dynamic width for filename column
-        filename_width = max(9, len(self.file_name) + 2)
+        filename_width = max(9, len(str(self.file_name)) + 2)
         bounded_width = 10  # fixed width for bounded column
 
         bounded = 'yes' if self.net.bounded else 'no'
@@ -145,21 +190,25 @@ class PetriNetController:
 
         # Build reachability graph for net
         g = self.net.g
-        for mark in g:
-            self.view.reach_canvas.add_marking(str(mark))
-            for new_mark, t_id in g[mark]:
-                self.view.reach_canvas.update_graph(new_mark=str(new_mark),
-                                                    prev_mark=str(mark),
-                                                    trans_original_id=str(t_id))
+        if g:
+            for mark in g:
+                self.view.reach_canvas.add_marking(str(mark))
+                for new_mark, t_id in g[mark]:
+                    self.view.reach_canvas.update_graph(new_mark=str(new_mark),
+                                                        prev_mark=str(mark),
+                                                        trans_original_id=str(t_id))
 
         self.load_marking_from_reach_graph(str(self.net.initial_mark))
         if not self.net.bounded:
             self.view.reach_canvas.highlight_unbounded(str(self.net.m_null), str(self.net.m_last))
 
-    def reset_reachability_graph(self):
+    def reset_reachability_graph(self) -> None:
+        """
+        Reset the reachability graph to the initial state.
+        """
         if self.net.mark is None:
             return
-        self.net.set_mark(self.net.initial_mark)
+        self.net.set_mark(list(self.net.initial_mark))
         self.view.petri_canvas.update_labels(self.net.mark)
         self.view.reach_canvas.reset_graph()
         reach_canvas_label = str(self.net.mark)

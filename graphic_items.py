@@ -1,12 +1,26 @@
-from PySide6.QtWidgets import QGraphicsEllipseItem, QGraphicsRectItem, QGraphicsItem, QGraphicsTextItem, QGraphicsLineItem
-from PySide6.QtGui import QPen, QPolygonF, QColor, QBrush
+from PySide6.QtWidgets import QGraphicsEllipseItem, QGraphicsRectItem, QGraphicsItem, QGraphicsTextItem, QGraphicsLineItem, QStyleOptionGraphicsItem, QWidget
+from PySide6.QtGui import QPen, QPolygonF, QColor, QBrush, QPainter
 from PySide6.QtCore import QPointF
 import math
+from typing import Callable
 
 class PlaceNode(QGraphicsEllipseItem):
-    def __init__(self, x, y, model_id, name, on_click = None):
-        radius = 20
-        super().__init__(-radius, -radius, 2*radius, 2*radius)
+    """
+    A graphical item representing a place in a Petri net.
+    """
+    def __init__(self, x: float, y: float, model_id: int, name: str, on_click: Callable[[int], None] | None = None) -> None:
+        """
+        Initialize the PlaceNode.
+
+        Args:
+            x: The x-coordinate of the place.
+            y: The y-coordinate of the place.
+            model_id: The ID of the place in the model.
+            name: The name of the place.
+            on_click: A callback function to execute when the place is clicked.
+        """
+        self.radius = 20
+        super().__init__(-self.radius, -self.radius, 2*self.radius, 2*self.radius)
         self.setPos(x, y)
         self.setBrush(QBrush(QColor("white")))
         self.setPen(QColor("black"))
@@ -14,7 +28,7 @@ class PlaceNode(QGraphicsEllipseItem):
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges)
-        self.edges = []
+        self.edges: list['Edge'] = []
         self.name = name
         self.model_id = model_id
         self.on_click = on_click
@@ -30,27 +44,51 @@ class PlaceNode(QGraphicsEllipseItem):
         self.name_label = QGraphicsTextItem(name, self)
         self.name_label.setDefaultTextColor(QColor("black"))
         name_rect = self.name_label.boundingRect()
-        self.name_label.setPos(-name_rect.width() / 2, radius + 2)
+        self.name_label.setPos(-name_rect.width() / 2, self.radius + 2)
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
+        """
+        Handle mouse press events.
+        """
         if self.on_click:
             self.on_click(self.model_id)
         super().mousePressEvent(event)
 
-    def itemChange(self, change, value):
+    def itemChange(self, change: QGraphicsItem.GraphicsItemChange, value) -> object:
+        """
+        Handle item changes, such as position changes.
+        """
         if change == QGraphicsItem.GraphicsItemChange.ItemPositionHasChanged:
             for edge in self.edges:
                 edge.update_position()
         return super().itemChange(change, value)
 
-    def set_selected(self, value: bool):
+    def set_selected(self, value: bool) -> None:
+        """
+        Set the selection state of the place.
+
+        Args:
+            value: True if selected, False otherwise.
+        """
         self.selected = value
         self.setBrush(QBrush(QColor("yellow") if value else QColor("white")))
         self.update()
 
 
 class MarkingNode(QGraphicsRectItem):
-    def __init__(self, x, y, marking_str, on_click=None):
+    """
+    A graphical item representing a marking in the reachability graph.
+    """
+    def __init__(self, x: float, y: float, marking_str: str, on_click: Callable[[str], None] | None = None) -> None:
+        """
+        Initialize the MarkingNode.
+
+        Args:
+            x: The x-coordinate of the marking node.
+            y: The y-coordinate of the marking node.
+            marking_str: The string representation of the marking.
+            on_click: A callback function to execute when the marking node is clicked.
+        """
         super().__init__()
 
         text_item = QGraphicsTextItem(marking_str)
@@ -69,7 +107,7 @@ class MarkingNode(QGraphicsRectItem):
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges)
 
-        self.edges = []
+        self.edges: list['Edge'] = []
         self.model_id = marking_str
         self.on_click = on_click
 
@@ -78,19 +116,40 @@ class MarkingNode(QGraphicsRectItem):
         label_rect = self.label.boundingRect()
         self.label.setPos(-label_rect.width()/2, -label_rect.height()/2)
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
+        """
+        Handle mouse press events.
+        """
         if self.on_click:
             self.on_click(self.model_id)
         super().mousePressEvent(event)
 
-    def itemChange(self, change, value):
+    def itemChange(self, change: QGraphicsItem.GraphicsItemChange, value) -> object:
+        """
+        Handle item changes, such as position changes.
+        """
         if change == QGraphicsItem.GraphicsItemChange.ItemPositionHasChanged:
             for edge in self.edges:
                 edge.update_position()
         return super().itemChange(change, value)
 
 class TransitionNode(QGraphicsRectItem):
-    def __init__(self, x, y, model_id, name, on_click = None, width=20, height=40):
+    """
+    A graphical item representing a transition in a Petri net.
+    """
+    def __init__(self, x: float, y: float, model_id: int, name: str, on_click: Callable[[int], None] | None = None, width: float = 20, height: float = 40) -> None:
+        """
+        Initialize the TransitionNode.
+
+        Args:
+            x: The x-coordinate of the transition.
+            y: The y-coordinate of the transition.
+            model_id: The ID of the transition in the model.
+            name: The name of the transition.
+            on_click: A callback function to execute when the transition is clicked.
+            width: The width of the transition rectangle.
+            height: The height of the transition rectangle.
+        """
         super().__init__(-width/2, -height/2, width, height)
         self.setPos(x, y)
         self.setBrush(QBrush(QColor("white")))
@@ -98,7 +157,7 @@ class TransitionNode(QGraphicsRectItem):
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges)
-        self.edges = []
+        self.edges: list['Edge'] = []
         self.model_id = model_id
         self.on_click = on_click
 
@@ -108,19 +167,36 @@ class TransitionNode(QGraphicsRectItem):
         # Position label below the rectangle
         self.label.setPos(-label_rect.width()/2, self.rect().height()/2 + 2)
 
-    def itemChange(self, change, value):
+    def itemChange(self, change: QGraphicsItem.GraphicsItemChange, value) -> object:
+        """
+        Handle item changes, such as position changes.
+        """
         if change == QGraphicsItem.GraphicsItemChange.ItemPositionHasChanged:
             for edge in self.edges:
                 edge.update_position()
         return super().itemChange(change, value)
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
+        """
+        Handle mouse press events.
+        """
         if self.on_click:
             self.on_click(self.model_id)
         super().mousePressEvent(event)
 
 class Edge(QGraphicsLineItem):
-    def __init__(self, source, target, label):
+    """
+    A graphical item representing an edge (arc) in a Petri net or reachability graph.
+    """
+    def __init__(self, source: PlaceNode | TransitionNode | MarkingNode, target: PlaceNode | TransitionNode | MarkingNode, label: str) -> None:
+        """
+        Initialize the Edge.
+
+        Args:
+            source: The source node.
+            target: The target node.
+            label: The label of the edge.
+        """
         super().__init__()
         self.source = source
         self.target = target
@@ -134,7 +210,10 @@ class Edge(QGraphicsLineItem):
 
         self.update_position()
 
-    def update_position(self):
+    def update_position(self) -> None:
+        """
+        Update the position of the edge based on the source and target positions.
+        """
         start = self.source.scenePos()
         end = self.target.scenePos()
 
@@ -162,7 +241,10 @@ class Edge(QGraphicsLineItem):
         self.setLine(start_x, start_y, end_x, end_y)
         self.update_arrow()
 
-    def update_arrow(self):
+    def update_arrow(self) -> None:
+        """
+        Update the arrow head of the edge.
+        """
         line = self.line()
         dx = line.x2() - line.x1()
         dy = line.y2() - line.y1()
@@ -181,11 +263,17 @@ class Edge(QGraphicsLineItem):
         self.update()
 
     def boundingRect(self):
+        """
+        Get the bounding rectangle of the edge.
+        """
         extra = self.arrow_size + 2
         rect = super().boundingRect()
         return rect.adjusted(-extra, -extra, extra, extra)
 
-    def paint(self, painter, option, widget=None):
+    def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: QWidget | None = None) -> None:
+        """
+        Paint the edge and its arrow head.
+        """
         super().paint(painter, option, widget)
         if self.arrow_head:
             painter.setBrush(QColor("black"))

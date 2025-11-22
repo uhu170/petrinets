@@ -1,5 +1,5 @@
 # petrinet_app.py
-from PySide6.QtWidgets import QGraphicsView, QMainWindow, QToolBar, QSplitter, QTextEdit, QWidget, QApplication, QDialog, QVBoxLayout, QLabel, QPushButton
+from PySide6.QtWidgets import QGraphicsView, QMainWindow, QToolBar, QSplitter, QTextEdit, QWidget, QApplication, QDialog, QVBoxLayout, QLabel, QPushButton, QGraphicsScene
 from PySide6.QtGui import QPainter, QAction, QFontDatabase
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QStatusBar
@@ -9,14 +9,33 @@ from petrinet_graph import PetrinetCanvas
 
 
 class GraphicsView(QGraphicsView):
-    def __init__(self, scene, parent=None):
+    """
+    A custom QGraphicsView with antialiasing and scroll hand drag mode enabled.
+    """
+    def __init__(self, scene: QGraphicsScene, parent: QWidget | None = None) -> None:
+        """
+        Initialize the GraphicsView.
+
+        Args:
+            scene: The QGraphicsScene to display.
+            parent: The parent widget.
+        """
         super().__init__(scene, parent)
         self.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
         self.setInteractive(True)
 
 class View(QMainWindow):
-    def __init__(self, controller):
+    """
+    The main window of the Petri net application.
+    """
+    def __init__(self, controller) -> None:
+        """
+        Initialize the View.
+
+        Args:
+            controller: The controller object managing the application.
+        """
         super().__init__()
         self.controller = controller
 
@@ -88,7 +107,10 @@ class View(QMainWindow):
         self.resize(800, 600)
         self.show()
 
-    def fit_all(self):
+    def fit_all(self) -> None:
+        """
+        Fit the Petri net canvas to show all items.
+        """
         bounding_rect = self.petri_canvas.scene.itemsBoundingRect()
         self.petri_canvas.centerOn(bounding_rect.center())
         padding = 50
@@ -99,7 +121,10 @@ class View(QMainWindow):
             bounding_rect.height() + 2 * padding
         )
 
-    def show_about_dialog(self):
+    def show_about_dialog(self) -> None:
+        """
+        Show the 'About' dialog.
+        """
         dialog = QDialog(self)
         dialog.setWindowTitle("About")
 
