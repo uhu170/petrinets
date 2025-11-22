@@ -5,7 +5,7 @@ This Python application can analyse your petrinet for boundedness.
 For this, two .pnml files have been provided.
 
 
-# How to set up the venv
+# How to set up
 
 python3 -m venv .venv
 
