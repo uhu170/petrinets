@@ -1,6 +1,6 @@
 # petrinet application
 
-This Python application can analyse your petrinet for boundedness. 
+This Python application can analyse your petrinets for boundedness. 
 
 For this, two .pnml files have been provided.
 
