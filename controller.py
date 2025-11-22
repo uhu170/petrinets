@@ -3,7 +3,7 @@ from view import View
 from petrinet import Petrinet
 from petri_io import Parser
 from PySide6.QtWidgets import QFileDialog
-from graphic_items import PlaceNode, TransitionNode
+from graphic_items import PlaceNode
 import os
 
 

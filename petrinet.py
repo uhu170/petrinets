@@ -104,7 +104,6 @@ class Petrinet:
         self.m_last = None
 
         def dfs(mark: tuple[int, ...]) -> bool:
-            mark = tuple(mark)
             if mark in visit:
                 return True
             visit.add(mark)
@@ -128,7 +127,7 @@ class Petrinet:
             return True
 
 
-        if dfs(self.mark):
+        if dfs(tuple(self.mark)):
             self.bounded = True
         else:
             self.bounded = False
