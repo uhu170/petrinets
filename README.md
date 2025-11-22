@@ -7,9 +7,9 @@ For this, two .pnml files have been provided.
 
 # How to set up the venv
 
-python3 -m venv venv
+python3 -m venv .venv
 
-source venv/bin/activate
+source .venv/bin/activate
 
 pip install --upgrade pip
 
